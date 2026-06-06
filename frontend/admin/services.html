@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Services | Admin | Glow & Grace Salon</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="../css/main.css" rel="stylesheet">
+  <link href="../css/dashboard.css" rel="stylesheet">
+</head>
+<body>
+  <div class="dashboard-layout">
+    <aside class="dashboard-sidebar" id="sidebar-container"></aside>
+    <main class="dashboard-main">
+      <header class="dashboard-header">
+        <div class="d-flex align-items-center gap-3">
+          <button class="sidebar-toggle" id="sidebar-toggle"><i class="bi bi-list"></i></button>
+          <h1>Service Management</h1>
+        </div>
+        <button class="btn btn-primary-custom btn-sm" onclick="openServiceModal()">
+          <i class="bi bi-plus"></i> Add Service
+        </button>
+      </header>
+
+      <div class="dashboard-content">
+        <div class="dash-card">
+          <div class="dash-card-body" id="services-table"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Service Modal -->
+  <div class="modal fade" id="serviceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="serviceModalTitle">Add Service</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="serviceForm">
+          <div class="modal-body">
+            <input type="hidden" id="service-id">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Name *</label>
+                <input type="text" class="form-control" id="svc-name" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Price ($) *</label>
+                <input type="number" class="form-control" id="svc-price" required min="0" step="0.01">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Duration (min)</label>
+                <input type="number" class="form-control" id="svc-duration" value="60">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="svc-category">
+                  <option value="hair">Hair</option>
+                  <option value="spa">Spa</option>
+                  <option value="skin">Skin</option>
+                  <option value="makeup">Makeup</option>
+                  <option value="bridal">Bridal</option>
+                  <option value="nails">Nails</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Description *</label>
+                <textarea class="form-control" id="svc-description" rows="3" required></textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Image URL</label>
+                <input type="url" class="form-control" id="svc-image" placeholder="https://...">
+              </div>
+              <div class="col-md-6">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" id="svc-featured">
+                  <label class="form-check-label">Featured Service</label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" id="svc-active" checked>
+                  <label class="form-check-label">Active</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary-custom">Save Service</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script src="../js/admin-dashboard.js"></script>
+  <script>
+    let serviceModal;
+
+    async function loadServices() {
+      const container = document.getElementById('services-table');
+      try {
+        const res = await API.getAllServicesAdmin();
+        container.innerHTML = `
+          <div class="table-responsive">
+            <table class="table-custom">
+              <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Duration</th><th>Featured</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                ${res.data.map(s => `
+                  <tr>
+                    <td><strong>${s.name}</strong></td>
+                    <td>${s.category}</td>
+                    <td>${formatPrice(s.price)}</td>
+                    <td>${s.duration} min</td>
+                    <td>${s.isFeatured ? '★' : '-'}</td>
+                    <td>${s.isActive ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'}</td>
+                    <td>
+                      <button class="btn-action btn-edit" onclick='editService(${JSON.stringify(s).replace(/'/g, "&#39;")})'>Edit</button>
+                      <button class="btn-action btn-delete" onclick="deleteService('${s._id}')">Delete</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>`;
+      } catch (e) {
+        container.innerHTML = `<p class="text-danger">${e.message}</p>`;
+      }
+    }
+
+    function openServiceModal(service = null) {
+      document.getElementById('serviceModalTitle').textContent = service ? 'Edit Service' : 'Add Service';
+      document.getElementById('service-id').value = service?._id || '';
+      document.getElementById('svc-name').value = service?.name || '';
+      document.getElementById('svc-price').value = service?.price || '';
+      document.getElementById('svc-duration').value = service?.duration || 60;
+      document.getElementById('svc-category').value = service?.category || 'hair';
+      document.getElementById('svc-description').value = service?.description || '';
+      document.getElementById('svc-image').value = service?.image || '';
+      document.getElementById('svc-featured').checked = service?.isFeatured || false;
+      document.getElementById('svc-active').checked = service?.isActive !== false;
+      serviceModal.show();
+    }
+
+    function editService(s) { openServiceModal(s); }
+
+    async function deleteService(id) {
+      if (!confirm('Delete this service?')) return;
+      try {
+        await API.deleteService(id);
+        showToast('Service deleted', 'success');
+        loadServices();
+      } catch (e) { showToast(e.message, 'error'); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!requireAdminAuth()) return;
+      Theme.init();
+      renderAdminSidebar('Services');
+      initSidebarToggle();
+      serviceModal = new bootstrap.Modal(document.getElementById('serviceModal'));
+      loadServices();
+
+      document.getElementById('serviceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('service-id').value;
+        const data = {
+          name: document.getElementById('svc-name').value,
+          price: parseFloat(document.getElementById('svc-price').value),
+          duration: parseInt(document.getElementById('svc-duration').value),
+          category: document.getElementById('svc-category').value,
+          description: document.getElementById('svc-description').value,
+          image: document.getElementById('svc-image').value,
+          isFeatured: document.getElementById('svc-featured').checked,
+          isActive: document.getElementById('svc-active').checked,
+        };
+        try {
+          if (id) await API.updateService(id, data);
+          else await API.createService(data);
+          showToast('Service saved', 'success');
+          serviceModal.hide();
+          loadServices();
+        } catch (err) { showToast(err.message, 'error'); }
+      });
+    });
+  </script>
+</body>
+</html>

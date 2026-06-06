@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Appointment | Glow & Grace Salon</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="../css/main.css" rel="stylesheet">
+  <link href="../css/dashboard.css" rel="stylesheet">
+</head>
+<body>
+  <div class="dashboard-layout">
+    <aside class="dashboard-sidebar" id="sidebar-container"></aside>
+
+    <main class="dashboard-main">
+      <header class="dashboard-header">
+        <div class="d-flex align-items-center gap-3">
+          <button class="sidebar-toggle" id="sidebar-toggle"><i class="bi bi-list"></i></button>
+          <h1>Book Appointment</h1>
+        </div>
+        <button class="btn theme-toggle" onclick="Theme.toggle()"><i class="bi bi-moon-fill"></i></button>
+      </header>
+
+      <div class="dashboard-content">
+        <!-- Booking Steps Indicator -->
+        <div class="booking-steps">
+          <div class="booking-step active" id="step-ind-1"><span class="step-number">1</span> Service</div>
+          <div class="booking-step" id="step-ind-2"><span class="step-number">2</span> Staff</div>
+          <div class="booking-step" id="step-ind-3"><span class="step-number">3</span> Date & Time</div>
+          <div class="booking-step" id="step-ind-4"><span class="step-number">4</span> Confirm</div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-body">
+            <!-- Step 1: Select Service -->
+            <div id="step-1">
+              <h4 class="mb-4">Select a Service</h4>
+              <div class="row g-3" id="service-list"></div>
+            </div>
+
+            <!-- Step 2: Select Staff -->
+            <div id="step-2" style="display:none;">
+              <h4 class="mb-4">Choose Your Stylist</h4>
+              <div class="row g-3" id="staff-list"></div>
+              <button class="btn btn-outline-custom mt-3" onclick="goToStep(1)">Back</button>
+            </div>
+
+            <!-- Step 3: Date & Time -->
+            <div id="step-3" style="display:none;">
+              <h4 class="mb-4">Select Date & Time</h4>
+              <div class="row g-4">
+                <div class="col-md-4">
+                  <label class="form-label">Date</label>
+                  <input type="date" class="form-control" id="booking-date" min="">
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label">Available Time Slots</label>
+                  <div class="time-slots-grid" id="time-slots"></div>
+                </div>
+              </div>
+              <div class="mt-3">
+                <button class="btn btn-outline-custom" onclick="goToStep(2)">Back</button>
+                <button class="btn btn-primary-custom ms-2" onclick="goToStep(4)" id="to-confirm-btn" disabled>Continue</button>
+              </div>
+            </div>
+
+            <!-- Step 4: Confirm -->
+            <div id="step-4" style="display:none;">
+              <h4 class="mb-4">Confirm Your Booking</h4>
+              <div class="contact-info-card mb-4" id="booking-summary"></div>
+              <div class="mb-3">
+                <label class="form-label">Additional Notes (optional)</label>
+                <textarea class="form-control" id="booking-notes" rows="3" placeholder="Any special requests..."></textarea>
+              </div>
+              <button class="btn btn-outline-custom" onclick="goToStep(3)">Back</button>
+              <button class="btn btn-primary-custom ms-2" id="confirm-booking-btn">
+                <i class="bi bi-calendar-check"></i> Confirm Booking
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script src="../js/user-dashboard.js"></script>
+  <script>
+    let booking = { service: null, staff: null, date: null, timeSlot: null };
+    let allServices = [];
+
+    function goToStep(step) {
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`step-${i}`).style.display = i === step ? 'block' : 'none';
+        const ind = document.getElementById(`step-ind-${i}`);
+        ind.classList.remove('active', 'completed');
+        if (i < step) ind.classList.add('completed');
+        if (i === step) ind.classList.add('active');
+      }
+      if (step === 4) renderSummary();
+    }
+
+    async function loadServices() {
+      try {
+        const res = await API.getServices();
+        allServices = res.data;
+        const preselected = new URLSearchParams(window.location.search).get('service');
+
+        document.getElementById('service-list').innerHTML = allServices.map(s => `
+          <div class="col-md-6 col-lg-4">
+            <div class="service-card staff-card-select ${preselected === s._id ? 'selected' : ''}"
+                 onclick="selectService('${s._id}')" id="svc-${s._id}">
+              <img src="${s.image}" alt="${s.name}" style="height:120px;object-fit:cover;width:100%;border-radius:8px;">
+              <h5 class="mt-2">${s.name}</h5>
+              <p>${formatPrice(s.price)} · ${s.duration} min</p>
+            </div>
+          </div>
+        `).join('');
+
+        if (preselected) selectService(preselected);
+      } catch (e) {
+        document.getElementById('service-list').innerHTML = `<p class="text-danger">${e.message}</p>`;
+      }
+    }
+
+    function selectService(id) {
+      booking.service = allServices.find(s => s._id === id);
+      document.querySelectorAll('#service-list .staff-card-select').forEach(el => el.classList.remove('selected'));
+      document.getElementById(`svc-${id}`)?.classList.add('selected');
+
+      document.getElementById('staff-list').innerHTML = (booking.service.staff || []).map(st => `
+        <div class="col-md-4">
+          <div class="staff-card-select" onclick="selectStaff('${st.name}')">
+            <i class="bi bi-person-circle fs-1 text-primary"></i>
+            <h5>${st.name}</h5>
+            <p>${st.specialty}</p>
+          </div>
+        </div>
+      `).join('') || '<p class="text-muted">No staff assigned. <button class="btn btn-primary-custom btn-sm" onclick="selectStaff(\'Any Available\')">Continue</button></p>';
+
+      setTimeout(() => goToStep(2), 300);
+    }
+
+    function selectStaff(name) {
+      booking.staff = name;
+      document.querySelectorAll('#staff-list .staff-card-select').forEach(el => el.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+
+      const dateInput = document.getElementById('booking-date');
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      dateInput.min = tomorrow.toISOString().split('T')[0];
+      dateInput.value = '';
+
+      setTimeout(() => goToStep(3), 300);
+    }
+
+    async function loadTimeSlots() {
+      const date = document.getElementById('booking-date').value;
+      if (!date || !booking.staff) return;
+
+      booking.date = date;
+      const container = document.getElementById('time-slots');
+      container.innerHTML = '<div class="spinner-custom"></div>';
+
+      try {
+        const res = await API.getSlots(date, booking.staff);
+        container.innerHTML = res.data.slots.map(slot => `
+          <button class="time-slot-btn" onclick="selectTimeSlot('${slot}')">${slot}</button>
+        `).join('') || '<p class="text-muted">No slots available for this date.</p>';
+      } catch (e) {
+        container.innerHTML = `<p class="text-danger">${e.message}</p>`;
+      }
+    }
+
+    function selectTimeSlot(slot) {
+      booking.timeSlot = slot;
+      document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      document.getElementById('to-confirm-btn').disabled = false;
+    }
+
+    function renderSummary() {
+      document.getElementById('booking-summary').innerHTML = `
+        <h5>Booking Summary</h5>
+        <hr>
+        <p><strong>Service:</strong> ${booking.service.name}</p>
+        <p><strong>Staff:</strong> ${booking.staff}</p>
+        <p><strong>Date:</strong> ${formatDate(booking.date)}</p>
+        <p><strong>Time:</strong> ${booking.timeSlot}</p>
+        <p><strong>Price:</strong> <span class="service-price">${formatPrice(booking.service.price)}</span></p>
+      `;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!API.isLoggedIn()) {
+        window.location.href = '../login.html?redirect=booking';
+        return;
+      }
+      if (API.isAdmin()) {
+        window.location.href = '../admin/dashboard.html';
+        return;
+      }
+
+      Theme.init();
+      renderUserSidebar('Book Appointment');
+      initSidebarToggle();
+      await loadServices();
+
+      document.getElementById('booking-date').addEventListener('change', loadTimeSlots);
+
+      document.getElementById('confirm-booking-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('confirm-booking-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Booking...';
+
+        try {
+          await API.bookAppointment({
+            serviceId: booking.service._id,
+            staff: booking.staff,
+            date: booking.date,
+            timeSlot: booking.timeSlot,
+            notes: document.getElementById('booking-notes').value,
+          });
+          showToast('Appointment booked successfully! Check your email for confirmation.', 'success');
+          setTimeout(() => window.location.href = 'dashboard.html', 1500);
+        } catch (e) {
+          showToast(e.message, 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-calendar-check"></i> Confirm Booking';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

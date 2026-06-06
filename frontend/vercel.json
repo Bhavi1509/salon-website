@@ -1,0 +1,19 @@
+{
+  "builds": [
+    { "src": "package.json", "use": "@vercel/static-build" }
+  ],
+  "outputDirectory": "dist",
+  "routes": [
+    { "src": "/api/(.*)", "dest": "https://your-backend.onrender.com/api/$1" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" }
+      ]
+    }
+  ]
+}

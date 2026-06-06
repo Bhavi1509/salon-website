@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Glow & Grace Salon - Premium luxury beauty salon offering hair cuts, spa treatments, facials, makeup, and bridal services.">
+  <meta name="keywords" content="salon, beauty, hair cut, facial, makeup, bridal, spa, luxury salon">
+  <title>Glow & Grace Salon | Where Beauty Meets Elegance</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="css/main.css" rel="stylesheet">
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="hero-content">
+        <h1 id="hero-title">Glow & Grace Salon</h1>
+        <p class="hero-subtitle" id="hero-subtitle">Where Beauty Meets Elegance</p>
+        <p id="hero-desc">Experience luxury beauty treatments in an atmosphere of refined elegance. Our expert stylists and therapists are dedicated to making you look and feel extraordinary.</p>
+        <div class="hero-buttons">
+          <a href="user/booking.html" class="btn btn-primary-custom"><i class="bi bi-calendar-check"></i> Book Appointment</a>
+          <a href="services.html" class="btn btn-outline-custom">Explore Services</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Services -->
+  <section class="section-padding" id="services">
+    <div class="container">
+      <div class="text-center fade-up">
+        <h2 class="section-title">Our Featured Services</h2>
+        <p class="section-subtitle">Discover our most popular treatments crafted for your beauty and wellness</p>
+      </div>
+      <div class="row g-4" id="featured-services">
+        <!-- Loaded dynamically -->
+      </div>
+      <div class="text-center mt-5 fade-up">
+        <a href="services.html" class="btn btn-outline-custom">View All Services</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why Choose Us -->
+  <section class="section-padding" style="background: var(--bg-secondary);">
+    <div class="container">
+      <div class="text-center fade-up">
+        <h2 class="section-title">Why Choose Us</h2>
+        <p class="section-subtitle">Experience the difference of true luxury beauty care</p>
+      </div>
+      <div class="row g-4" id="why-choose-us">
+        <!-- Loaded dynamically -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="section-padding">
+    <div class="container">
+      <div class="text-center fade-up">
+        <h2 class="section-title">What Our Clients Say</h2>
+        <p class="section-subtitle">Trusted by hundreds of satisfied clients</p>
+      </div>
+      <div id="testimonialCarousel" class="carousel slide fade-up" data-bs-ride="carousel">
+        <div class="carousel-inner" id="testimonials-container"></div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon"></span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery Preview -->
+  <section class="section-padding" style="background: var(--bg-secondary);">
+    <div class="container">
+      <div class="text-center fade-up">
+        <h2 class="section-title">Our Gallery</h2>
+        <p class="section-subtitle">A glimpse into our world of beauty and elegance</p>
+      </div>
+      <div class="gallery-grid fade-up" id="gallery-preview"></div>
+      <div class="text-center mt-5">
+        <a href="gallery.html" class="btn btn-outline-custom">View Full Gallery</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section fade-up">
+    <div class="container">
+      <h2>Ready to Experience Luxury?</h2>
+      <p>Book your appointment today and let our experts transform your beauty routine.</p>
+      <a href="user/booking.html" class="btn btn-outline-custom btn-lg">Book Now</a>
+    </div>
+  </section>
+
+  <div id="footer-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        // Load CMS content
+        const content = await API.getContent('home');
+        if (content.data.hero) {
+          document.getElementById('hero-title').textContent = content.data.hero.title;
+          document.getElementById('hero-subtitle').textContent = content.data.hero.subtitle;
+          document.getElementById('hero-desc').textContent = content.data.hero.description;
+        }
+
+        // Why Choose Us
+        if (content.data.whyChooseUs) {
+          document.getElementById('why-choose-us').innerHTML = content.data.whyChooseUs.items.map(item => `
+            <div class="col-md-6 col-lg-3 fade-up">
+              <div class="feature-card">
+                <div class="feature-icon"><i class="bi ${item.icon}"></i></div>
+                <h4>${item.title}</h4>
+                <p>${item.description}</p>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // Testimonials
+        if (content.data.testimonials) {
+          document.getElementById('testimonials-container').innerHTML = content.data.testimonials.items.map((t, i) => `
+            <div class="carousel-item ${i === 0 ? 'active' : ''}">
+              <div class="testimonial-card">
+                <div class="testimonial-stars">${'★'.repeat(t.rating)}</div>
+                <p class="testimonial-text">"${t.text}"</p>
+                <p class="testimonial-author">— ${t.name}</p>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (e) { console.log('Using default content'); }
+
+      // Featured Services
+      try {
+        const services = await API.getServices('featured=true');
+        document.getElementById('featured-services').innerHTML = services.data.slice(0, 4).map(s => `
+          <div class="col-md-6 col-lg-3 fade-up">
+            <div class="service-card">
+              <div class="service-card-img">
+                <img src="${s.image}" alt="${s.name}" loading="lazy">
+              </div>
+              <div class="service-card-body">
+                <h3>${s.name}</h3>
+                <p class="text-muted small">${s.description.substring(0, 80)}...</p>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                  <span class="service-price">${formatPrice(s.price)}</span>
+                  <a href="user/booking.html?service=${s._id}" class="btn btn-primary-custom btn-sm">Book Now</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        document.getElementById('featured-services').innerHTML = '<div class="col-12 text-center"><p class="text-muted">Start the backend server to load services.</p></div>';
+      }
+
+      // Gallery Preview
+      try {
+        const gallery = await API.getGallery();
+        document.getElementById('gallery-preview').innerHTML = gallery.data.slice(0, 6).map(g => `
+          <div class="gallery-item">
+            <img src="${g.imageUrl}" alt="${g.title}" loading="lazy">
+            <div class="gallery-overlay"><h5>${g.title}</h5></div>
+          </div>
+        `).join('');
+      } catch (e) { /* gallery optional */ }
+
+      initScrollAnimations();
+    });
+  </script>
+</body>
+</html>

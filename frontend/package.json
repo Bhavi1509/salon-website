@@ -1,0 +1,9 @@
+{
+  "name": "glow-grace-salon-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build-script.js",
+    "start": "npx serve dist -p 3000"
+  }
+}

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Content Management | Admin | Glow & Grace Salon</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="../css/main.css" rel="stylesheet">
+  <link href="../css/dashboard.css" rel="stylesheet">
+</head>
+<body>
+  <div class="dashboard-layout">
+    <aside class="dashboard-sidebar" id="sidebar-container"></aside>
+    <main class="dashboard-main">
+      <header class="dashboard-header">
+        <div class="d-flex align-items-center gap-3">
+          <button class="sidebar-toggle" id="sidebar-toggle"><i class="bi bi-list"></i></button>
+          <h1>Content Management</h1>
+        </div>
+        <button class="btn theme-toggle" onclick="Theme.toggle()"><i class="bi bi-moon-fill"></i></button>
+      </header>
+
+      <div class="dashboard-content">
+        <ul class="nav nav-tabs mb-4" id="contentTabs">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#home-content">Home Page</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#contact-content">Contact Info</a></li>
+        </ul>
+
+        <div class="tab-content">
+          <!-- Home Content -->
+          <div class="tab-pane fade show active" id="home-content">
+            <div class="dash-card">
+              <div class="dash-card-header"><h3>Hero Section</h3></div>
+              <div class="dash-card-body">
+                <form id="heroForm" class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">Title</label>
+                    <input type="text" class="form-control" id="hero-title-input">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Subtitle</label>
+                    <input type="text" class="form-control" id="hero-subtitle-input">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" id="hero-desc-input" rows="3"></textarea>
+                  </div>
+                  <div class="col-12">
+                    <button type="submit" class="btn btn-primary-custom">Save Hero Content</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Content -->
+          <div class="tab-pane fade" id="contact-content">
+            <div class="dash-card">
+              <div class="dash-card-header"><h3>Contact Information</h3></div>
+              <div class="dash-card-body">
+                <form id="contactForm" class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Phone</label>
+                    <input type="text" class="form-control" id="contact-phone-input">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="contact-email-input">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Address</label>
+                    <input type="text" class="form-control" id="contact-address-input">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Weekday Hours</label>
+                    <input type="text" class="form-control" id="contact-weekday-input">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Saturday Hours</label>
+                    <input type="text" class="form-control" id="contact-saturday-input">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Sunday Hours</label>
+                    <input type="text" class="form-control" id="contact-sunday-input">
+                  </div>
+                  <div class="col-12">
+                    <button type="submit" class="btn btn-primary-custom">Save Contact Info</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script src="../js/admin-dashboard.js"></script>
+  <script>
+    async function loadContent() {
+      try {
+        const home = await API.getContent('home');
+        if (home.data.hero) {
+          document.getElementById('hero-title-input').value = home.data.hero.title || '';
+          document.getElementById('hero-subtitle-input').value = home.data.hero.subtitle || '';
+          document.getElementById('hero-desc-input').value = home.data.hero.description || '';
+        }
+
+        const contact = await API.getContent('contact');
+        if (contact.data.contact) {
+          const c = contact.data.contact;
+          document.getElementById('contact-phone-input').value = c.phone || '';
+          document.getElementById('contact-email-input').value = c.email || '';
+          document.getElementById('contact-address-input').value = c.address || '';
+          if (c.hours) {
+            document.getElementById('contact-weekday-input').value = c.hours.weekdays || '';
+            document.getElementById('contact-saturday-input').value = c.hours.saturday || '';
+            document.getElementById('contact-sunday-input').value = c.hours.sunday || '';
+          }
+        }
+      } catch (e) { console.log('Load content error', e); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!requireAdminAuth()) return;
+      Theme.init();
+      renderAdminSidebar('Content');
+      initSidebarToggle();
+      loadContent();
+
+      document.getElementById('heroForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          await API.updateContent({
+            key: 'hero',
+            section: 'home',
+            data: {
+              title: document.getElementById('hero-title-input').value,
+              subtitle: document.getElementById('hero-subtitle-input').value,
+              description: document.getElementById('hero-desc-input').value,
+            },
+          });
+          showToast('Hero content saved', 'success');
+        } catch (err) { showToast(err.message, 'error'); }
+      });
+
+      document.getElementById('contactForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          await API.updateContent({
+            key: 'contact',
+            section: 'contact',
+            data: {
+              phone: document.getElementById('contact-phone-input').value,
+              email: document.getElementById('contact-email-input').value,
+              address: document.getElementById('contact-address-input').value,
+              hours: {
+                weekdays: document.getElementById('contact-weekday-input').value,
+                saturday: document.getElementById('contact-saturday-input').value,
+                sunday: document.getElementById('contact-sunday-input').value,
+              },
+            },
+          });
+          showToast('Contact info saved', 'success');
+        } catch (err) { showToast(err.message, 'error'); }
+      });
+    });
+  </script>
+</body>
+</html>

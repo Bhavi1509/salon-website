@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users | Admin | Glow & Grace Salon</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="../css/main.css" rel="stylesheet">
+  <link href="../css/dashboard.css" rel="stylesheet">
+</head>
+<body>
+  <div class="dashboard-layout">
+    <aside class="dashboard-sidebar" id="sidebar-container"></aside>
+    <main class="dashboard-main">
+      <header class="dashboard-header">
+        <div class="d-flex align-items-center gap-3">
+          <button class="sidebar-toggle" id="sidebar-toggle"><i class="bi bi-list"></i></button>
+          <h1>User Management</h1>
+        </div>
+        <button class="btn theme-toggle" onclick="Theme.toggle()"><i class="bi bi-moon-fill"></i></button>
+      </header>
+
+      <div class="dashboard-content">
+        <div class="dash-card">
+          <div class="dash-card-body">
+            <div class="filter-bar mb-4">
+              <input type="text" class="form-control" id="user-search" placeholder="Search users...">
+              <button class="btn btn-primary-custom btn-sm" onclick="loadUsers()">Search</button>
+            </div>
+            <div id="users-table"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit User</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="editUserForm">
+          <div class="modal-body">
+            <input type="hidden" id="edit-user-id">
+            <div class="mb-3">
+              <label class="form-label">Name</label>
+              <input type="text" class="form-control" id="edit-user-name" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" id="edit-user-email" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Phone</label>
+              <input type="tel" class="form-control" id="edit-user-phone">
+            </div>
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="edit-user-active">
+              <label class="form-check-label">Active Account</label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary-custom">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script src="../js/admin-dashboard.js"></script>
+  <script>
+    let editModal;
+
+    async function loadUsers() {
+      const search = document.getElementById('user-search')?.value || '';
+      const container = document.getElementById('users-table');
+      try {
+        const res = await API.getUsers(search ? `search=${encodeURIComponent(search)}` : '');
+        container.innerHTML = `
+          <div class="table-responsive">
+            <table class="table-custom">
+              <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                ${res.data.map(u => `
+                  <tr>
+                    <td><strong>${u.name}</strong></td>
+                    <td>${u.email}</td>
+                    <td>${u.phone || '-'}</td>
+                    <td>${formatDate(u.createdAt)}</td>
+                    <td>${u.isActive ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>'}</td>
+                    <td>
+                      <button class="btn-action btn-edit" onclick='openEditUser(${JSON.stringify(u).replace(/'/g, "&#39;")})'>Edit</button>
+                      <button class="btn-action btn-delete" onclick="deleteUser('${u._id}')">Delete</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          <p class="text-muted mt-2">Total: ${res.pagination?.total || res.data.length} users</p>`;
+      } catch (e) {
+        container.innerHTML = `<p class="text-danger">${e.message}</p>`;
+      }
+    }
+
+    function openEditUser(u) {
+      document.getElementById('edit-user-id').value = u._id;
+      document.getElementById('edit-user-name').value = u.name;
+      document.getElementById('edit-user-email').value = u.email;
+      document.getElementById('edit-user-phone').value = u.phone || '';
+      document.getElementById('edit-user-active').checked = u.isActive;
+      editModal.show();
+    }
+
+    async function deleteUser(id) {
+      if (!confirm('Delete this user permanently?')) return;
+      try {
+        await API.deleteUser(id);
+        showToast('User deleted', 'success');
+        loadUsers();
+      } catch (e) { showToast(e.message, 'error'); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!requireAdminAuth()) return;
+      Theme.init();
+      renderAdminSidebar('Users');
+      initSidebarToggle();
+      editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+      loadUsers();
+
+      document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit-user-id').value;
+        try {
+          await API.updateUser(id, {
+            name: document.getElementById('edit-user-name').value,
+            email: document.getElementById('edit-user-email').value,
+            phone: document.getElementById('edit-user-phone').value,
+            isActive: document.getElementById('edit-user-active').checked,
+          });
+          showToast('User updated', 'success');
+          editModal.hide();
+          loadUsers();
+        } catch (err) { showToast(err.message, 'error'); }
+      });
+    });
+  </script>
+</body>
+</html>
