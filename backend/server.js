@@ -30,9 +30,17 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Root Route
+app.get('/', (req, res) => {
+  res.send('Glow & Grace Salon API is running');
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'Glow & Grace Salon API is running' });
+  res.json({
+    success: true,
+    message: 'Glow & Grace Salon API is running'
+  });
 });
 
 // API Routes
